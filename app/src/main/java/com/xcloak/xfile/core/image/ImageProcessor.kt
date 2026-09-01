@@ -3,7 +3,6 @@ package com.xcloak.xfile.core.image
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,20 +17,35 @@ import javax.inject.Singleton
 class ImageProcessor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    // FIX: every method below used to hardcode ".jpg" filenames/JPEG compression
+    // regardless of the format actually requested, which silently flattened
+    // transparent PNGs to opaque JPEGs. This derives the real extension.
+    private fun Bitmap.CompressFormat.extension(): String = when (this) {
+        Bitmap.CompressFormat.PNG -> "png"
+        Bitmap.CompressFormat.WEBP -> "webp"
+        else -> "jpg"
+    }
+
+    private fun withExtension(fileName: String, format: Bitmap.CompressFormat): String {
+        val base = fileName.substringBeforeLast('.', fileName)
+        return "$base.${format.extension()}"
+    }
+
     suspend fun resizeImage(
         uri: Uri,
         width: Int,
         height: Int,
         outputFileName: String,
-        keepAspectRatio: Boolean = true
+        keepAspectRatio: Boolean = true,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
     ): Result<File> = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val originalBitmap = BitmapFactory.decodeStream(inputStream)
-                
+
                 val finalWidth: Int
                 val finalHeight: Int
-                
+
                 if (keepAspectRatio) {
                     val ratio = originalBitmap.width.toFloat() / originalBitmap.height.toFloat()
                     if (width.toFloat() / height.toFloat() > ratio) {
@@ -47,12 +61,12 @@ class ImageProcessor @Inject constructor(
                 }
 
                 val resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, finalWidth, finalHeight, true)
-                
-                val outputFile = File(context.cacheDir, outputFileName)
+
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
                 val outputStream = FileOutputStream(outputFile)
-                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+                resizedBitmap.compress(format, 90, outputStream)
                 outputStream.close()
-                
+
                 Result.success(outputFile)
             } ?: Result.failure(Exception("Could not open input stream"))
         } catch (e: Exception) {
@@ -69,7 +83,7 @@ class ImageProcessor @Inject constructor(
         try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bitmap = BitmapFactory.decodeStream(inputStream)
-                val outputFile = File(context.cacheDir, outputFileName)
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
                 val outputStream = FileOutputStream(outputFile)
                 bitmap.compress(format, quality, outputStream)
                 outputStream.close()
@@ -88,7 +102,7 @@ class ImageProcessor @Inject constructor(
         try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bitmap = BitmapFactory.decodeStream(inputStream)
-                val outputFile = File(context.cacheDir, outputFileName)
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
                 val outputStream = FileOutputStream(outputFile)
                 bitmap.compress(format, 90, outputStream)
                 outputStream.close()
@@ -99,14 +113,20 @@ class ImageProcessor @Inject constructor(
         }
     }
 
-    suspend fun stripMetadata(uri: Uri, outputFileName: String): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun stripMetadata(
+        uri: Uri,
+        outputFileName: String,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG
+    ): Result<File> = withContext(Dispatchers.IO) {
         try {
-            val outputFile = File(context.cacheDir, outputFileName)
+            // FIX: previously always re-encoded as JPEG at 100 quality, which
+            // silently dropped transparency on PNGs. Defaults to PNG now (lossless,
+            // keeps alpha); pass JPEG explicitly for photos where that's preferred.
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bitmap = BitmapFactory.decodeStream(inputStream)
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
                 val outputStream = FileOutputStream(outputFile)
-                // Compressing to JPEG without metadata
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                bitmap.compress(format, 100, outputStream)
                 outputStream.close()
                 Result.success(outputFile)
             } ?: Result.failure(Exception("Could not open input stream"))

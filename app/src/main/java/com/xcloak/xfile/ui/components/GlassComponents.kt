@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -20,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xcloak.xfile.ui.theme.ElectricBlue
 import com.xcloak.xfile.ui.theme.GlassBorder
-import com.xcloak.xfile.ui.theme.GlassWhite
 
 @Composable
 fun GlassCard(
@@ -34,9 +32,13 @@ fun GlassCard(
         border = BorderStroke(1.dp, GlassBorder),
         shape = RoundedCornerShape(24.dp)
     ) {
+        // FIX: this Box previously had Modifier.blur(20.dp), which blurs everything
+        // drawn inside it — including the text/icons passed in via `content`.
+        // Compose has no true "backdrop-only" blur without a library (e.g. Haze),
+        // so instead of blurring, the frosted look now comes from the translucent
+        // gradient fill + border only. Content stays sharp.
         Box(
             modifier = Modifier
-                .blur(20.dp) // Frosted effect
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(

@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -36,6 +35,8 @@ fun GlassyCard(
         shape = RoundedCornerShape(24.dp),
         shadowElevation = 8.dp
     ) {
+        // FIX: removed Modifier.blur(20.dp) — it was blurring this card's own
+        // content (text/inputs), not the background behind it.
         Box(
             modifier = Modifier
                 .background(

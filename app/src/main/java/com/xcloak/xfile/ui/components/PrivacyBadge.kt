@@ -28,7 +28,9 @@ fun PrivacyBadge(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
             Text(
-                text = "🔒 Processed locally in your browser",
+                // FIX: was "Processed locally in your browser" — leftover web-app
+                // copy. This is a native Android app; nothing touches a browser.
+                text = "🔒 Processed 100% on your device",
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 10.sp,
                     color = Color.White,

@@ -26,14 +26,17 @@ fun ImageToolsScreen(
     onBack: () -> Unit,
     onToolSelected: (String) -> Unit
 ) {
+    // FIX: removed Crop, Thumbnails, and Bulk Process — none of the three had any
+    // engine method behind them, so all three errored out on tap. Compress,
+    // Resize, Convert, and Privacy now handle multiple selected files natively
+    // (see ToolFlowViewModel), which covers what "Bulk Process" was meant to do.
+    // Crop and Thumbnails need dedicated UI (a crop canvas / thumbnail grid) that
+    // isn't built yet — good candidates for a follow-up pass.
     val tools = listOf(
         ToolInfo("IMG_COMPRESS", "Compress", "Reduce size", Icons.Default.Compress),
         ToolInfo("IMG_RESIZE", "Resize", "Adjust dimensions", Icons.Default.AspectRatio),
         ToolInfo("IMG_CONVERT", "Convert", "Change format", Icons.Default.Transform),
-        ToolInfo("IMG_CROP", "Crop", "Trim edges", Icons.Default.Crop),
-        ToolInfo("IMG_METADATA", "Privacy", "Remove metadata", Icons.Default.Shield),
-        ToolInfo("IMG_THUMB", "Thumbnails", "Bulk generate", Icons.Default.GridView),
-        ToolInfo("IMG_BULK", "Bulk Process", "Batch workflow", Icons.Default.Bolt)
+        ToolInfo("IMG_METADATA", "Privacy", "Remove metadata", Icons.Default.Shield)
     )
 
     Scaffold(

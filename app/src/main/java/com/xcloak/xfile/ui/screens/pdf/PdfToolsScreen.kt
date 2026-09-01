@@ -26,14 +26,18 @@ fun PdfToolsScreen(
     onBack: () -> Unit,
     onToolSelected: (String) -> Unit
 ) {
+    // FIX: "Reorder" was removed — it had no options UI (needs a drag-and-drop
+    // page grid) and no view-model wiring, so tapping it errored. "Delete Pages"
+    // was added — the engine method already existed and was already wired in the
+    // view model, it just had no tile to launch it.
     val tools = listOf(
         ToolInfo("PDF_MERGE", "Merge", "Combine files", Icons.Default.Merge),
         ToolInfo("PDF_SPLIT", "Split", "Extract pages", Icons.Default.CallSplit),
-        ToolInfo("PDF_COMPRESS", "Compress", "Reduce size", Icons.Default.Compress),
-        ToolInfo("PDF_ROTATE", "Rotate", "Rotate pages", Icons.Default.RotateRight),
-        ToolInfo("PDF_REORDER", "Reorder", "Organize pages", Icons.Default.Reorder),
-        ToolInfo("PDF_WATERMARK", "Watermark", "Add protection", Icons.Default.Water),
         ToolInfo("PDF_EXTRACT", "Extract", "Specific pages", Icons.Default.ContentCopy),
+        ToolInfo("PDF_DELETE", "Delete Pages", "Remove pages", Icons.Default.DeleteOutline),
+        ToolInfo("PDF_ROTATE", "Rotate", "Rotate pages", Icons.Default.RotateRight),
+        ToolInfo("PDF_WATERMARK", "Watermark", "Add protection", Icons.Default.Water),
+        ToolInfo("PDF_COMPRESS", "Compress", "Reduce size", Icons.Default.Compress),
         ToolInfo("PDF_NUMBERS", "Numbers", "Add pagination", Icons.Default.Pin),
         ToolInfo("PDF_CONVERT", "Image → PDF", "Create PDF", Icons.Default.PictureAsPdf)
     )

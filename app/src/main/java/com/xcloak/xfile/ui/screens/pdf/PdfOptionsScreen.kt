@@ -19,8 +19,12 @@ fun PdfOptionsScreen(
     toolId: String,
     pageRange: String,
     rotationDegrees: Int,
+    quality: Int,
+    watermarkText: String,
     onPageRangeChange: (String) -> Unit,
     onRotationChange: (Int) -> Unit,
+    onQualityChange: (Int) -> Unit,
+    onWatermarkTextChange: (String) -> Unit,
     onProcess: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -40,10 +44,10 @@ fun PdfOptionsScreen(
                         style = MaterialTheme.typography.headlineLarge,
                         color = Color.White
                     )
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    
-                    if (toolId in listOf("PDF_EXTRACT", "PDF_DELETE", "PDF_ROTATE", "PDF_WATERMARK")) {
+
+                    if (toolId in listOf("PDF_EXTRACT", "PDF_DELETE", "PDF_ROTATE")) {
                         OutlinedTextField(
                             value = pageRange,
                             onValueChange = onPageRangeChange,
@@ -57,10 +61,29 @@ fun PdfOptionsScreen(
                                 unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
                             )
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    
+
+                    // FIX: PDF_WATERMARK previously showed only the page-range field
+                    // above and had no way to enter the actual watermark text.
+                    if (toolId == "PDF_WATERMARK") {
+                        OutlinedTextField(
+                            value = watermarkText,
+                            onValueChange = onWatermarkTextChange,
+                            label = { Text("Watermark text") },
+                            placeholder = { Text("e.g. CONFIDENTIAL") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
                     if (toolId == "PDF_ROTATE") {
                         Text(
                             text = "Rotation Angle: $rotationDegrees°",
@@ -78,17 +101,56 @@ fun PdfOptionsScreen(
                             )
                         )
                     }
+
+                    // NEW: PDF_COMPRESS had a tile but no options UI or engine hookup at all.
+                    if (toolId == "PDF_COMPRESS") {
+                        Text(
+                            text = "Quality: $quality%",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Lower quality = smaller file size",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                        Slider(
+                            value = quality.toFloat(),
+                            onValueChange = { onQualityChange(it.toInt()) },
+                            valueRange = 10f..100f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+
+                    if (toolId == "PDF_NUMBERS") {
+                        Text(
+                            text = "Page numbers will be added to the bottom center of every page, starting at 1.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    if (toolId == "PDF_CONVERT") {
+                        Text(
+                            text = "Each selected image becomes one page, in the order you picked them.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             GlassButton(
                 text = "Apply & Process",
                 onClick = onProcess,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

@@ -58,20 +58,24 @@ fun PrivacyIndicator(
                 .alpha(alpha)
                 .background(SuccessGreen, CircleShape)
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         Icon(
             imageVector = Icons.Default.Shield,
             contentDescription = null,
             tint = SuccessGreen,
             modifier = Modifier.size(14.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(6.dp))
-        
+
         Text(
-            text = "E2E LOCAL ENCRYPTION ACTIVE",
+            // FIX: was "E2E LOCAL ENCRYPTION ACTIVE" — nothing in this codebase
+            // actually encrypts files. That's a false security claim on a
+            // security-branded app. This now states only what's actually true:
+            // processing happens on-device, nothing is uploaded.
+            text = "ON-DEVICE PROCESSING · NO UPLOADS",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,

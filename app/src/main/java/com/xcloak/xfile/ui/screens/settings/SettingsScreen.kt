@@ -9,6 +9,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +32,9 @@ fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: ThemeViewModel = hiltViewModel()
 ) {
+    // FIX: read the actual current theme instead of ignoring it.
+    val currentTheme by viewModel.themeState.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,13 +87,25 @@ fun SettingsScreen(
         Text("General", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.4f))
         Spacer(modifier = Modifier.height(12.dp))
 
+        // FIX: previously always called setTheme(AppTheme.DARK) no matter what —
+        // tapping did nothing observable. Now cycles Dark -> Follow System -> Dark
+        // and shows the current selection.
+        // NOTE: a true selectable Light theme isn't wired up yet — most screens in
+        // this app hardcode Color.White text on dark glass, so switching the color
+        // scheme alone would make text unreadable on a light background. Full Light
+        // mode needs those per-screen colors swapped to MaterialTheme.colorScheme
+        // equivalents first; happy to do that as a separate pass.
         SettingsRow(
-            Icons.Default.Palette, 
-            "Appearance", 
-            "Switch Theme",
+            Icons.Default.Palette,
+            "Appearance",
+            when (currentTheme) {
+                AppTheme.DARK -> "Dark"
+                AppTheme.SYSTEM -> "Follow System"
+                AppTheme.LIGHT -> "Dark" // not yet supported end-to-end, see note above
+            },
             onClick = {
-                // Simplified toggle logic for now
-                viewModel.setTheme(AppTheme.DARK) 
+                val next = if (currentTheme == AppTheme.SYSTEM) AppTheme.DARK else AppTheme.SYSTEM
+                viewModel.setTheme(next)
             }
         )
 

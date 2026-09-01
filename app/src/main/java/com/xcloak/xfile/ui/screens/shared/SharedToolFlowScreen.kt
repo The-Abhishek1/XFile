@@ -20,7 +20,15 @@ fun SharedToolFlowScreen(
         is FlowState.Idle -> {
             FilePickerScreen(
                 title = toolId.replace("_", " "),
-                allowedFormats = if (toolId.startsWith("PDF")) listOf("application/pdf") else listOf("image/*"),
+                // FIX: every "PDF_"-prefixed tool was forced to pick application/pdf,
+                // which made "Image → PDF" impossible to use — it needs images in.
+                allowedFormats = if (toolId == "PDF_CONVERT") {
+                    listOf("image/*")
+                } else if (toolId.startsWith("PDF")) {
+                    listOf("application/pdf")
+                } else {
+                    listOf("image/*")
+                },
                 onFilesSelected = { viewModel.setFiles(it) },
                 onBack = onBack
             )
@@ -31,8 +39,12 @@ fun SharedToolFlowScreen(
                     toolId = toolId,
                     pageRange = s.pageRange,
                     rotationDegrees = s.rotationDegrees,
+                    quality = s.quality,
+                    watermarkText = s.watermarkText,
                     onPageRangeChange = { viewModel.updateOptions(pageRange = it) },
                     onRotationChange = { viewModel.updateOptions(rotationDegrees = it) },
+                    onQualityChange = { viewModel.updateOptions(quality = it) },
+                    onWatermarkTextChange = { viewModel.updateOptions(watermarkText = it) },
                     onProcess = { viewModel.startProcessing(toolId) },
                     onBack = { viewModel.reset() }
                 )
