@@ -7,11 +7,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.xcloak.xfile.ui.components.GlassCard
-import com.xcloak.xfile.ui.theme.ElectricBlue
 
 @Composable
 fun ProcessingScreen(
@@ -35,9 +33,9 @@ fun ProcessingScreen(
                 CircularProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.size(80.dp),
-                    color = ElectricBlue,
+                    color = MaterialTheme.colorScheme.primary,
                     strokeWidth = 6.dp,
-                    trackColor = Color.White.copy(alpha = 0.1f)
+                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -45,7 +43,7 @@ fun ProcessingScreen(
                 Text(
                     text = "Processing Locally",
                     style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -53,7 +51,7 @@ fun ProcessingScreen(
                 Text(
                     text = status,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center
                 )
                 
@@ -62,7 +60,7 @@ fun ProcessingScreen(
                 Text(
                     text = "${(progress * 100).toInt()}%",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = ElectricBlue
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

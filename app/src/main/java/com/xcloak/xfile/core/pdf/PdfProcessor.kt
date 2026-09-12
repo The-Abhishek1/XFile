@@ -3,7 +3,10 @@ package com.xcloak.xfile.core.pdf
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.ParcelFileDescriptor
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
@@ -20,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,7 +35,46 @@ class PdfProcessor @Inject constructor(
         PDFBoxResourceLoader.init(context)
     }
 
-    suspend fun mergePdfs(uris: List<Uri>, outputFileName: String): Result<File> = withContext(Dispatchers.IO) {
+    /**
+     * Renders multiple pages of a PDF to allow scrolling preview.
+     * Quality is kept low (72 DPI) to preserve memory while providing a good preview.
+     */
+    suspend fun getPdfPages(uri: Uri, maxPages: Int = 20): List<Bitmap> = withContext(Dispatchers.IO) {
+        val bitmaps = mutableListOf<Bitmap>()
+        try {
+            val pfd = context.contentResolver.openFileDescriptor(uri, "r") ?: return@withContext emptyList()
+            val renderer = PdfRenderer(pfd)
+            val pagesToRender = renderer.pageCount.coerceAtMost(maxPages)
+            
+            for (i in 0 until pagesToRender) {
+                val page = renderer.openPage(i)
+                // Downscale for preview to save memory. 72dpi standard.
+                val width = (page.width * 1.5).toInt()
+                val height = (page.height * 1.5).toInt()
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                bitmaps.add(bitmap)
+                page.close()
+            }
+            renderer.close()
+            pfd.close()
+        } catch (e: Exception) {
+            // Log or handle
+        }
+        bitmaps
+    }
+
+    // Keep the single thumbnail method for the "Merge" list cards (faster)
+    suspend fun getThumbnail(uri: Uri): Bitmap? = withContext(Dispatchers.IO) {
+        getPdfPages(uri, 1).firstOrNull()
+    }
+
+    suspend fun mergePdfs(
+        uris: List<Uri>,
+        outputFileName: String,
+        onProgress: (Float) -> Unit = {}
+    ): Result<File> = withContext(Dispatchers.IO) {
+        val openStreams = mutableListOf<InputStream>()
         try {
             val merger = PDFMergerUtility()
             val outputFile = File(context.cacheDir, outputFileName)
@@ -39,33 +82,58 @@ class PdfProcessor @Inject constructor(
 
             merger.destinationStream = outputStream
 
-            uris.forEach { uri ->
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            uris.forEachIndexed { index, uri ->
+                context.contentResolver.openInputStream(uri)?.let { inputStream ->
                     merger.addSource(inputStream)
+                    openStreams.add(inputStream)
                 }
+                onProgress(0.1f + (index.toFloat() / uris.size) * 0.7f)
             }
 
-            merger.mergeDocuments(null)
+            // Using main memory only to avoid permission issues with temp files on some Android versions
+            // and keeping it efficient for typical mobile use cases.
+            merger.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly())
             outputStream.close()
+            onProgress(0.9f)
 
             Result.success(outputFile)
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            openStreams.forEach { it.close() }
         }
     }
 
-    suspend fun splitPdf(uri: Uri): Result<List<File>> = withContext(Dispatchers.IO) {
+    suspend fun splitPdf(
+        uri: Uri,
+        splitEvery: Int = 1,
+        prefix: String = "page",
+        onProgress: (Float) -> Unit = {}
+    ): Result<List<File>> = withContext(Dispatchers.IO) {
         try {
             val files = mutableListOf<File>()
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
-                for (i in 0 until document.numberOfPages) {
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
+                val totalPages = document.numberOfPages
+                val timestamp = System.currentTimeMillis()
+
+                for (i in 0 until totalPages step splitEvery) {
                     val newDocument = PDDocument()
-                    newDocument.addPage(document.getPage(i))
-                    val outputFile = File(context.cacheDir, "page_${i + 1}_${System.currentTimeMillis()}.pdf")
+                    val endPage = (i + splitEvery).coerceAtMost(totalPages)
+                    
+                    for (j in i until endPage) {
+                        newDocument.addPage(document.getPage(j))
+                    }
+
+                    val rangeText = if (splitEvery == 1) "${i + 1}" else "${i + 1}-${endPage}"
+                    val fileName = "${prefix}_${rangeText}_$timestamp.pdf"
+                    val outputFile = File(context.cacheDir, fileName)
+                    
                     FileOutputStream(outputFile).use { os -> newDocument.save(os) }
                     newDocument.close()
                     files.add(outputFile)
+                    
+                    onProgress((i + splitEvery).toFloat() / totalPages)
                 }
                 document.close()
             }
@@ -79,7 +147,7 @@ class PdfProcessor @Inject constructor(
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val newDocument = PDDocument()
                 val pagesToExtract = parsePageRange(pageRange, document.numberOfPages)
 
@@ -101,7 +169,7 @@ class PdfProcessor @Inject constructor(
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val pagesToDelete = parsePageRange(pageRange, document.numberOfPages).toSet()
                 val newDocument = PDDocument()
 
@@ -125,7 +193,7 @@ class PdfProcessor @Inject constructor(
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val pagesToRotate = if (pageRange.isEmpty()) (0 until document.numberOfPages).toList() else parsePageRange(pageRange, document.numberOfPages)
 
                 pagesToRotate.forEach { pageIndex ->
@@ -146,7 +214,7 @@ class PdfProcessor @Inject constructor(
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val newDocument = PDDocument()
 
                 newOrder.forEach { pageIndex ->
@@ -170,15 +238,19 @@ class PdfProcessor @Inject constructor(
         text: String,
         outputFileName: String,
         opacity: Float = 0.5f,
-        rotation: Int = 45
+        rotation: Int = 45,
+        fontSize: Float = 48f,
+        onProgress: (Float) -> Unit = {}
     ): Result<File> = withContext(Dispatchers.IO) {
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val font = PDType1Font.HELVETICA_BOLD
+                val totalPages = document.numberOfPages
 
-                for (page in document.pages) {
+                document.pages.forEachIndexed { index, page ->
+                    val pageSize = page.mediaBox
                     val contentStream = PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)
 
                     val gs = PDExtendedGraphicsState()
@@ -186,17 +258,25 @@ class PdfProcessor @Inject constructor(
                     contentStream.setGraphicsStateParameters(gs)
 
                     contentStream.beginText()
-                    contentStream.setFont(font, 48f)
+                    contentStream.setFont(font, fontSize)
                     contentStream.setNonStrokingColor(200, 200, 200)
 
-                    val pageSize = page.mediaBox
                     val x = pageSize.width / 2
                     val y = pageSize.height / 2
+                    
+                    val textWidth = font.getStringWidth(text) / 1000 * fontSize
+                    val textHeight = fontSize * 0.7f // Approximate height
 
-                    contentStream.setTextMatrix(Matrix.getRotateInstance(Math.toRadians(rotation.toDouble()), x, y))
+                    // Adjust for text centering
+                    val matrix = Matrix.getRotateInstance(Math.toRadians(rotation.toDouble()), x, y)
+                    matrix.translate(-textWidth / 2, -textHeight / 2)
+                    
+                    contentStream.setTextMatrix(matrix)
                     contentStream.showText(text)
                     contentStream.endText()
                     contentStream.close()
+                    
+                    onProgress((index + 1f) / totalPages)
                 }
 
                 FileOutputStream(outputFile).use { os -> document.save(os) }
@@ -208,19 +288,22 @@ class PdfProcessor @Inject constructor(
         }
     }
 
-    // NEW: was missing entirely — the "Compress" tile had no engine method behind it.
-    // Downsamples/recompresses embedded raster images page by page; text/vector
-    // content is untouched since that's already compact in a PDF.
-    suspend fun compressPdf(uri: Uri, quality: Int, outputFileName: String): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun compressPdf(
+        uri: Uri,
+        quality: Int,
+        outputFileName: String,
+        onProgress: (Float) -> Unit = {}
+    ): Result<File> = withContext(Dispatchers.IO) {
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             val jpegQuality = (quality.coerceIn(1, 100)) / 100f
 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
+                val totalPages = document.pages.count()
 
-                for (page in document.pages) {
-                    val resources = page.resources ?: continue
+                document.pages.forEachIndexed { index, page ->
+                    val resources = page.resources ?: return@forEachIndexed
                     for (name in resources.xObjectNames.toList()) {
                         val xObject = resources.getXObject(name)
                         if (xObject is PDImageXObject) {
@@ -229,10 +312,12 @@ class PdfProcessor @Inject constructor(
                             resources.put(name, recompressed)
                         }
                     }
+                    onProgress(0.1f + (index.toFloat() / totalPages) * 0.8f)
                 }
 
                 FileOutputStream(outputFile).use { os -> document.save(os) }
                 document.close()
+                onProgress(1.0f)
                 Result.success(outputFile)
             } ?: Result.failure(Exception("Could not open input stream"))
         } catch (e: Exception) {
@@ -240,29 +325,49 @@ class PdfProcessor @Inject constructor(
         }
     }
 
-    // NEW: was missing entirely — the "Numbers" tile had no engine method behind it.
-    suspend fun addPageNumbers(uri: Uri, outputFileName: String, startAt: Int = 1): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun addPageNumbers(
+        uri: Uri,
+        outputFileName: String,
+        startAt: Int = 1,
+        fontSize: Float = 10f,
+        position: String = "Bottom Center",
+        margin: Float = 20f,
+        onProgress: (Float) -> Unit = {}
+    ): Result<File> = withContext(Dispatchers.IO) {
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val document = PDDocument.load(inputStream)
+                val document = PDDocument.load(inputStream, MemoryUsageSetting.setupMainMemoryOnly())
                 val font = PDType1Font.HELVETICA
+                val totalPages = document.numberOfPages
 
                 document.pages.forEachIndexed { index, page ->
                     val pageNumber = startAt + index
                     val text = pageNumber.toString()
                     val pageSize = page.mediaBox
-                    val fontSize = 10f
                     val textWidth = font.getStringWidth(text) / 1000 * fontSize
+                    val textHeight = fontSize * 0.7f
+
+                    val x = when {
+                        position.contains("Left") -> margin
+                        position.contains("Right") -> pageSize.width - textWidth - margin
+                        else -> (pageSize.width - textWidth) / 2 // Center
+                    }
+
+                    val y = when {
+                        position.contains("Top") -> pageSize.height - textHeight - margin
+                        else -> margin // Bottom
+                    }
 
                     PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { cs ->
                         cs.beginText()
                         cs.setFont(font, fontSize)
                         cs.setNonStrokingColor(80, 80, 80)
-                        cs.newLineAtOffset((pageSize.width - textWidth) / 2, 20f)
+                        cs.newLineAtOffset(x, y)
                         cs.showText(text)
                         cs.endText()
                     }
+                    onProgress((index + 1f) / totalPages)
                 }
 
                 FileOutputStream(outputFile).use { os -> document.save(os) }
@@ -274,25 +379,53 @@ class PdfProcessor @Inject constructor(
         }
     }
 
-    // NEW: was missing entirely — the "Image → PDF" tile had no engine method behind it.
-    // One image per page, page sized to the image at 1px = 1pt (matches most
-    // "image to PDF" tool behavior for on-screen images).
-    suspend fun convertImagesToPdf(uris: List<Uri>, outputFileName: String): Result<File> = withContext(Dispatchers.IO) {
+    suspend fun convertImagesToPdf(
+        uris: List<Uri>,
+        outputFileName: String,
+        pageSize: String = "Original",
+        imageScale: String = "Fit",
+        quality: Int = 90,
+        onProgress: (Float) -> Unit = {}
+    ): Result<File> = withContext(Dispatchers.IO) {
         try {
             val outputFile = File(context.cacheDir, outputFileName)
             val document = PDDocument()
+            val jpegQuality = quality.coerceIn(1, 100) / 100f
 
-            uris.forEach { uri ->
+            uris.forEachIndexed { index, uri ->
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    val page = PDPage(PDRectangle(bitmap.width.toFloat(), bitmap.height.toFloat()))
+                    val bitmap = BitmapFactory.decodeStream(inputStream) ?: return@forEachIndexed
+                    
+                    val mediaBox = if (pageSize == "A4") {
+                        PDRectangle.A4
+                    } else {
+                        PDRectangle(bitmap.width.toFloat(), bitmap.height.toFloat())
+                    }
+                    
+                    val page = PDPage(mediaBox)
                     document.addPage(page)
 
-                    val image = JPEGFactory.createFromImage(document, bitmap, 0.9f)
+                    val image = JPEGFactory.createFromImage(document, bitmap, jpegQuality)
+                    
                     PDPageContentStream(document, page).use { cs ->
-                        cs.drawImage(image, 0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
+                        if (pageSize == "Original" || imageScale == "Stretch") {
+                            cs.drawImage(image, 0f, 0f, mediaBox.width, mediaBox.height)
+                        } else {
+                            // Fit or Fill logic for A4/fixed size
+                            val scaleX = mediaBox.width / bitmap.width
+                            val scaleY = mediaBox.height / bitmap.height
+                            val scale = if (imageScale == "Fit") kotlin.math.min(scaleX, scaleY) else kotlin.math.max(scaleX, scaleY)
+                            
+                            val w = bitmap.width * scale
+                            val h = bitmap.height * scale
+                            val x = (mediaBox.width - w) / 2
+                            val y = (mediaBox.height - h) / 2
+                            
+                            cs.drawImage(image, x, y, w, h)
+                        }
                     }
                 }
+                onProgress((index + 1f) / uris.size)
             }
 
             if (document.numberOfPages == 0) {

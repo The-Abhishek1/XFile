@@ -26,10 +26,14 @@ import com.xcloak.xfile.ui.components.GlassButton
 import com.xcloak.xfile.ui.components.GlassCard
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.xcloak.xfile.R
+
 data class OnboardingPage(
     val title: String,
     val description: String,
-    val icon: ImageVector
+    val imageRes: Int
 )
 
 @Composable
@@ -40,17 +44,17 @@ fun OnboardingScreen(
         OnboardingPage(
             "100% Offline",
             "Everything processes on-device. Nothing is ever uploaded.",
-            Icons.Default.CloudOff
+            R.drawable.ic_brand_logo_dark
         ),
         OnboardingPage(
             "PDF + Image Tools",
             "A complete toolbox for all your document and image needs.",
-            Icons.Default.GridView
+            R.drawable.ic_brand_logo_dark
         ),
         OnboardingPage(
             "No Accounts",
             "No signups, no tracking. Your privacy is our priority.",
-            Icons.Default.Shield
+            R.drawable.ic_brand_logo_dark
         )
     )
     
@@ -73,23 +77,22 @@ fun OnboardingScreen(
                 GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(420.dp)
+                        .height(480.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        androidx.compose.material3.Icon(
-                            imageVector = page.icon,
+                        Image(
+                            painter = painterResource(id = page.imageRes),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(80.dp)
+                            modifier = Modifier.size(240.dp)
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                         Text(
                             text = page.title,
-                            style = MaterialTheme.typography.displayMedium,
+                            style = MaterialTheme.typography.displayMedium.copy(fontSize = 28.sp),
                             color = Color.White,
                             textAlign = TextAlign.Center
                         )

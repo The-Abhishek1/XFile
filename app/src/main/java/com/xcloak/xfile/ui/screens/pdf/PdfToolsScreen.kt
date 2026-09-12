@@ -1,9 +1,11 @@
 package com.xcloak.xfile.ui.screens.pdf
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -18,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xcloak.xfile.ui.components.AdvancedGlassCard
 import com.xcloak.xfile.ui.screens.shared.ToolInfo
-import com.xcloak.xfile.ui.theme.ElectricBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,15 +46,24 @@ fun PdfToolsScreen(
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = { Text("PDF Tools", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
+            Column {
+                TopAppBar(
+                    title = { Text("PDF Tools", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                )
+                // NEW: this list of tools had no framing at all — just a bare grid.
+                Text(
+                    text = "${tools.size} tools to edit, organize, and optimize PDFs — all on-device.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
         }
     ) { padding ->
         LazyVerticalGrid(
@@ -86,23 +96,33 @@ fun PdfToolCard(tool: ToolInfo, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = tool.icon,
-                contentDescription = null,
-                tint = ElectricBlue,
-                modifier = Modifier.size(32.dp)
-            )
+            // NEW: a bare icon floating over glass read as unfinished — a tinted
+            // container gives each tool a visual anchor, matching the icon-chip
+            // pattern already used on the Settings and Home screens.
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = tool.icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = tool.name,
                 style = MaterialTheme.typography.headlineLarge,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 18.sp
             )
             Text(
                 text = tool.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }

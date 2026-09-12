@@ -14,8 +14,15 @@ class BillingManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) : PurchasesUpdatedListener {
 
+    companion object {
+        const val PRODUCT_PRO = "xfile_lifetime"
+    }
+
     private val _isPro = MutableStateFlow(false)
     val isPro = _isPro.asStateFlow()
+
+    private val _proPrice = MutableStateFlow("Unlock Pro")
+    val proPrice = _proPrice.asStateFlow()
 
     private val billingClient = BillingClient.newBuilder(context)
         .setListener(this)
@@ -31,13 +38,32 @@ class BillingManager @Inject constructor(
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     queryPurchases()
+                    fetchProductDetails()
                 }
             }
 
             override fun onBillingServiceDisconnected() {
+                // Consider adding a back-off strategy for production
                 startConnection()
             }
         })
+    }
+
+    private fun fetchProductDetails() {
+        val productList = listOf(
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_PRO)
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+        )
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
+
+        billingClient.queryProductDetailsAsync(params) { _, productDetailsResult ->
+            val productDetails = productDetailsResult.productDetailsList.firstOrNull()
+            productDetails?.oneTimePurchaseOfferDetails?.formattedPrice?.let {
+                _proPrice.value = "Unlock Pro — $it"
+            }
+        }
     }
 
     private fun queryPurchases() {
@@ -45,14 +71,17 @@ class BillingManager @Inject constructor(
             .setProductType(BillingClient.ProductType.INAPP)
             .build()
         billingClient.queryPurchasesAsync(params) { _, purchases ->
-            _isPro.value = purchases.any { it.products.contains("pro_lifetime") }
+            _isPro.value = purchases.any { purchase ->
+                purchase.products.contains(PRODUCT_PRO) && 
+                purchase.purchaseState == Purchase.PurchaseState.PURCHASED
+            }
         }
     }
 
     fun purchasePro(activity: Activity) {
         val productList = listOf(
             QueryProductDetailsParams.Product.newBuilder()
-                .setProductId("pro_lifetime")
+                .setProductId(PRODUCT_PRO)
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build()
         )
@@ -80,7 +109,9 @@ class BillingManager @Inject constructor(
     }
 
     private fun handlePurchase(purchase: Purchase) {
-        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED && !purchase.isAcknowledged) {
+        if (purchase.products.contains(PRODUCT_PRO) &&
+            purchase.purchaseState == Purchase.PurchaseState.PURCHASED && 
+            !purchase.isAcknowledged) {
             val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                 .setPurchaseToken(purchase.purchaseToken)
                 .build()

@@ -61,10 +61,11 @@ fun PdfMergeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.selectedUris) { uri ->
+                    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
                         shape = MaterialTheme.shapes.medium,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.2f else 0.6f))
                     ) {
                         ListItem(
                             headlineContent = { Text(uri.path?.substringAfterLast('/') ?: "Unknown file") },

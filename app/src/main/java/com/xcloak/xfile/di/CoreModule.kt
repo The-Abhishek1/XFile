@@ -47,8 +47,9 @@ object CoreModule {
     @Provides
     @Singleton
     fun provideAdManager(
-        @ApplicationContext context: Context
-    ): AdManager = AdManager(context)
+        @ApplicationContext context: Context,
+        billingManager: BillingManager
+    ): AdManager = AdManager(context, billingManager)
 
     @Provides
     @Singleton

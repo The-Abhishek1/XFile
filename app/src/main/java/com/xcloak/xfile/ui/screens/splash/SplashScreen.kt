@@ -4,8 +4,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.xcloak.xfile.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,18 +61,17 @@ fun SplashScreen(
         ) {
             Surface(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .scale(scale)
                     .alpha(alpha),
-                color = Color.White.copy(alpha = 0.1f),
+                color = Color.Transparent,
                 shape = CircleShape
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_brand_logo_dark),
+                        contentDescription = "XFile Logo",
+                        modifier = Modifier.size(100.dp)
                     )
                 }
             }

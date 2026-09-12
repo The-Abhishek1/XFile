@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exposes the cacheDir, where PdfProcessor/ImageProcessor write results, and the
+     app-specific external files dir, where we fall back to saving on API < 29,
+     through a content:// URI via FileProvider. Nothing outside these two roots
+     is ever exposed. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="processed_cache" path="." />
+    <external-files-path name="processed_saved" path="." />
+</paths>

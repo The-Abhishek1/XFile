@@ -14,25 +14,32 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = ElectricBlue,
+    secondary = Color(0xFF38BDF8),
+    tertiary = IndigoBrand,
     onPrimary = NavyDeep,
     background = NavyDeep,
     onBackground = TextWhite,
     surface = NavyDeep,
     onSurface = TextWhite,
     outline = GlassBorder,
-    surfaceVariant = GlassWhite
+    surfaceVariant = GlassWhite,
+    error = ErrorRed
 )
 
 // FIX: light scheme was imported but never defined/used — "Switch Theme" had nothing to switch to.
 private val LightColorScheme = lightColorScheme(
     primary = IndigoBrand,
+    secondary = ElectricBlue,
+    tertiary = VioletSoft,
     onPrimary = Color.White,
-    background = Color(0xFFF8FAFC),
-    onBackground = Color(0xFF0F172A),
-    surface = Color(0xFFF1F5F9),
-    onSurface = Color(0xFF0F172A),
-    outline = Color(0x1A0F172A),
-    surfaceVariant = Color(0x0D0F172A)
+    background = Color(0xFFF1F5F9), // Slate 100
+    onBackground = NavyDeep,
+    surface = Color.White,
+    onSurface = NavyDeep,
+    surfaceVariant = Color(0xFFE2E8F0), // Slate 200
+    onSurfaceVariant = Color(0xFF475569), // Slate 600
+    outline = Color(0xFFCBD5E1), // Slate 300
+    error = Color(0xFFB91C1C)
 )
 
 @Composable

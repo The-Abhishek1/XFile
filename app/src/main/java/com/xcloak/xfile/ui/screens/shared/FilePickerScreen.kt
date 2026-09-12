@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.xcloak.xfile.ui.components.GlassButton
 import com.xcloak.xfile.ui.components.GlassChip
 import com.xcloak.xfile.ui.components.PrivacyBadge
-import com.xcloak.xfile.ui.theme.ElectricBlue
 
 @Composable
 fun FilePickerScreen(
@@ -54,7 +54,7 @@ fun FilePickerScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onBack) {
-                Text("← Back", color = Color.White.copy(alpha = 0.6f))
+                Text("← Back", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
             }
         }
 
@@ -63,7 +63,7 @@ fun FilePickerScreen(
         Text(
             text = title,
             style = MaterialTheme.typography.displayMedium,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -74,10 +74,12 @@ fun FilePickerScreen(
                 .fillMaxWidth()
                 .height(300.dp)
                 .clip(RoundedCornerShape(32.dp))
-                .background(Color.White.copy(alpha = 0.03f))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))
                 .clickable { launcher.launch(allowedFormats.toTypedArray()) },
             contentAlignment = Alignment.Center
         ) {
+            val isDark = isSystemInDarkTheme()
+            val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.3f else 0.6f)
             androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                 val path = androidx.compose.ui.graphics.Path().apply {
                     addRoundRect(
@@ -89,7 +91,7 @@ fun FilePickerScreen(
                 }
                 drawPath(
                     path = path,
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = outlineColor,
                     style = Stroke(
                         width = 2.dp.toPx(),
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f)
@@ -104,19 +106,19 @@ fun FilePickerScreen(
                 Icon(
                     imageVector = Icons.Default.UploadFile,
                     contentDescription = null,
-                    tint = ElectricBlue,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(72.dp)
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     "Drop files here",
                     style = MaterialTheme.typography.displayMedium,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     "or tap to browse",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
             }
         }
@@ -149,7 +151,7 @@ fun FilePickerScreen(
             Text(
                 "No files selected",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.4f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
         }
 
@@ -173,10 +175,11 @@ fun SelectedFileChip(
     name: String,
     onRemove: () -> Unit
 ) {
+    val isDark = isSystemInDarkTheme()
     Surface(
-        color = Color.White.copy(alpha = 0.1f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.2f else 0.6f))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -184,7 +187,7 @@ fun SelectedFileChip(
         ) {
             Text(
                 text = name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 maxLines = 1
             )
@@ -196,7 +199,7 @@ fun SelectedFileChip(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Remove",
-                    tint = Color.White.copy(alpha = 0.6f)
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }

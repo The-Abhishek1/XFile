@@ -8,18 +8,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.xcloak.xfile.ui.theme.IndigoBrand
 
 @Composable
 fun PrivacyBadge(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = IndigoBrand,
+        color = MaterialTheme.colorScheme.primary,
         shape = MaterialTheme.shapes.extraSmall,
         modifier = modifier
     ) {
@@ -28,12 +26,10 @@ fun PrivacyBadge(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
             Text(
-                // FIX: was "Processed locally in your browser" — leftover web-app
-                // copy. This is a native Android app; nothing touches a browser.
                 text = "🔒 Processed 100% on your device",
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 10.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Medium
                 )
             )

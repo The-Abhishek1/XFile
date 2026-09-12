@@ -1,14 +1,14 @@
 package com.xcloak.xfile.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,37 +17,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.xcloak.xfile.ui.theme.ElectricBlue
-import com.xcloak.xfile.ui.theme.GlassBorder
 
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
+    val shape = RoundedCornerShape(24.dp)
+    val isDark = isSystemInDarkTheme()
+    
     Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp)),
-        color = Color.White.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, GlassBorder),
-        shape = RoundedCornerShape(24.dp)
+        onClick = onClick ?: {},
+        enabled = onClick != null,
+        modifier = modifier.clip(shape),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.1f else 0.05f),
+        border = BorderStroke(1.dp, if (isDark) {
+            Brush.linearGradient(
+                colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), Color.Transparent)
+            )
+        } else {
+            androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+        }),
+        shape = shape
     ) {
-        // FIX: this Box previously had Modifier.blur(20.dp), which blurs everything
-        // drawn inside it — including the text/icons passed in via `content`.
-        // Compose has no true "backdrop-only" blur without a library (e.g. Haze),
-        // so instead of blurring, the frosted look now comes from the translucent
-        // gradient fill + border only. Content stays sharp.
         Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.12f),
-                            Color.White.copy(alpha = 0.05f)
-                        )
-                    )
-                )
-                .padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             content = content
         )
     }
@@ -60,15 +55,45 @@ fun GlassButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = -500f,
+        targetValue = 500f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer"
+    )
+
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0f),
+            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0f)
+        ),
+        start = androidx.compose.ui.geometry.Offset(shimmerOffset, 0f),
+        end = androidx.compose.ui.geometry.Offset(shimmerOffset + 100f, 100f)
+    )
+
     Button(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
+        modifier = modifier
+            .height(56.dp)
+            .background(shimmerBrush, RoundedCornerShape(24.dp)),
         enabled = enabled,
         colors = ButtonDefaults.buttonColors(
-            containerColor = ElectricBlue,
-            contentColor = Color.White
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isSystemInDarkTheme()) 0.15f else 0.08f),
+            contentColor = MaterialTheme.colorScheme.primary
         ),
-        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, if (isSystemInDarkTheme()) {
+            Brush.linearGradient(
+                colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f), Color.Transparent)
+            )
+        } else {
+            androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+        }),
+        shape = RoundedCornerShape(24.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
         Text(
@@ -84,17 +109,18 @@ fun GlassChip(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val isDark = isSystemInDarkTheme()
     Surface(
-        color = Color.White.copy(alpha = 0.1f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.15f else 0.08f),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.3f else 0.6f)),
         modifier = modifier
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             fontSize = 12.sp,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

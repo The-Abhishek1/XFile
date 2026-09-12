@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,59 @@ class ImageProcessor @Inject constructor(
     private fun withExtension(fileName: String, format: Bitmap.CompressFormat): String {
         val base = fileName.substringBeforeLast('.', fileName)
         return "$base.${format.extension()}"
+    }
+
+    suspend fun rotateImage(
+        uri: Uri,
+        degrees: Int,
+        outputFileName: String,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
+    ): Result<File> = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
+                val rotatedBitmap = Bitmap.createBitmap(
+                    originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height, matrix, true
+                )
+
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
+                FileOutputStream(outputFile).use { os ->
+                    rotatedBitmap.compress(format, 90, os)
+                }
+                Result.success(outputFile)
+            } ?: Result.failure(Exception("Could not open input stream"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun flipImage(
+        uri: Uri,
+        horizontal: Boolean,
+        vertical: Boolean,
+        outputFileName: String,
+        format: Bitmap.CompressFormat = Bitmap.CompressFormat.JPEG
+    ): Result<File> = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val originalBitmap = BitmapFactory.decodeStream(inputStream)
+                val matrix = Matrix().apply {
+                    postScale(if (horizontal) -1f else 1f, if (vertical) -1f else 1f)
+                }
+                val flippedBitmap = Bitmap.createBitmap(
+                    originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height, matrix, true
+                )
+
+                val outputFile = File(context.cacheDir, withExtension(outputFileName, format))
+                FileOutputStream(outputFile).use { os ->
+                    flippedBitmap.compress(format, 90, os)
+                }
+                Result.success(outputFile)
+            } ?: Result.failure(Exception("Could not open input stream"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun resizeImage(

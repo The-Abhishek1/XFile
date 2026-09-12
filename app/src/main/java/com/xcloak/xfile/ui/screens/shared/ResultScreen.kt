@@ -19,13 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xcloak.xfile.ui.components.GlassCard
-import com.xcloak.xfile.ui.theme.ElectricBlue
 import com.xcloak.xfile.ui.theme.SuccessGreen
 
 @Composable
 fun ResultScreen(
     originalSize: Long,
     resultSize: Long,
+    fileCount: Int = 1,
     onShare: () -> Unit,
     onSave: () -> Unit,
     onOpen: () -> Unit,
@@ -54,13 +54,13 @@ fun ResultScreen(
         Text(
             text = "Done!",
             style = MaterialTheme.typography.displayLarge,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         Text(
-            text = "Your file is ready.",
+            text = if (fileCount > 1) "$fileCount files are ready." else "Your file is ready.",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -75,8 +75,8 @@ fun ResultScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    MetricBox("Original", formatSize(originalSize), Color.White.copy(alpha = 0.6f), Modifier.weight(1f))
-                    MetricBox("Result", formatSize(resultSize), ElectricBlue, Modifier.weight(1f))
+                    MetricBox("Original", formatSize(originalSize), MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), Modifier.weight(1f))
+                    MetricBox("Result", formatSize(resultSize), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -114,7 +114,7 @@ fun ResultScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         TextButton(onClick = onProcessAnother) {
-            Text("Process Another File", color = Color.White.copy(alpha = 0.6f))
+            Text("Process Another File", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -122,7 +122,7 @@ fun ResultScreen(
         Text(
             text = "🔒 Processed entirely on your device",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.4f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
         )
     }
 }
@@ -131,11 +131,11 @@ fun ResultScreen(
 fun MetricBox(label: String, size: String, color: Color, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+        Text(label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), fontSize = 12.sp)
         Spacer(modifier = Modifier.height(4.dp))
         Text(size, color = color, fontWeight = FontWeight.Bold, fontSize = 18.sp)
     }
@@ -143,20 +143,21 @@ fun MetricBox(label: String, size: String, color: Color, modifier: Modifier = Mo
 
 @Composable
 fun ActionButton(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     Surface(
         onClick = onClick,
         modifier = modifier.height(80.dp),
-        color = Color.White.copy(alpha = 0.05f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.2f else 0.6f))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, color = Color.White, fontSize = 12.sp)
+            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp)
         }
     }
 }

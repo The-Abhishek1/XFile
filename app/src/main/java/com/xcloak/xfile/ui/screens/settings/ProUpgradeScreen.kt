@@ -19,17 +19,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.xcloak.xfile.core.billing.BillingManager
 import com.xcloak.xfile.ui.components.GlassButton
 import com.xcloak.xfile.ui.components.GlassCard
-import com.xcloak.xfile.ui.theme.ElectricBlue
-import com.xcloak.xfile.ui.theme.VioletSoft
 
 @Composable
 fun ProUpgradeScreen(
     onBack: () -> Unit,
-    onUpgradeClick: (Activity) -> Unit
+    onUpgradeClick: (Activity) -> Unit,
+    billingManager: BillingManager
 ) {
     val context = LocalContext.current
+    val proPrice by billingManager.proPrice.collectAsState()
 
     Column(
         modifier = Modifier
@@ -42,7 +45,7 @@ fun ProUpgradeScreen(
             horizontalArrangement = Arrangement.End
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White.copy(alpha = 0.6f))
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
             }
         }
 
@@ -51,7 +54,7 @@ fun ProUpgradeScreen(
         Icon(
             imageVector = Icons.Default.Star,
             contentDescription = null,
-            tint = ElectricBlue,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(64.dp)
         )
 
@@ -60,13 +63,13 @@ fun ProUpgradeScreen(
         Text(
             text = "Go Pro",
             style = MaterialTheme.typography.displayLarge,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
             text = "Unlock the full potential of XFile",
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.7f)
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(48.dp))
@@ -75,7 +78,12 @@ fun ProUpgradeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
-                    BorderStroke(2.dp, Brush.linearGradient(listOf(ElectricBlue, VioletSoft))),
+                    BorderStroke(2.dp, Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary, 
+                            MaterialTheme.colorScheme.tertiary
+                        )
+                    )),
                     RoundedCornerShape(24.dp)
                 )
         ) {
@@ -96,20 +104,20 @@ fun ProUpgradeScreen(
 
         Text(
             text = "One-time purchase. Lifetime access.",
-            color = Color.White.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             fontSize = 14.sp
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         GlassButton(
-            text = "Unlock Pro — ₹299",
+            text = proPrice,
             onClick = { (context as? Activity)?.let { onUpgradeClick(it) } },
             modifier = Modifier.fillMaxWidth()
         )
         
         TextButton(onClick = { /* Restore */ }) {
-            Text("Restore Purchase", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
+            Text("Restore Purchase", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f), fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -127,13 +135,13 @@ fun FeatureRow(text: String, isPro: Boolean) {
         Icon(
             imageVector = if (isPro) Icons.Default.Check else Icons.Default.Close,
             contentDescription = null,
-            tint = if (isPro) ElectricBlue else Color.White.copy(alpha = 0.3f),
+            tint = if (isPro) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = text,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium
         )
     }
