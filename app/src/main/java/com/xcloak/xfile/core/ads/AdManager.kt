@@ -16,11 +16,11 @@ class AdManager @Inject constructor(
     private val billingManager: com.xcloak.xfile.core.billing.BillingManager
 ) {
     companion object {
-        private const val IS_DEBUG = true // Ideally linked to BuildConfig.DEBUG
+        private val IS_DEBUG = com.xcloak.xfile.BuildConfig.DEBUG
 
         // Production Ad Units from User
         private const val PROD_BANNER = "ca-app-pub-5043960817552570/8058963118"
-        private const val PROD_INTERSTITIAL = "ca-app-pub-5043960817552570/644139432"
+        private const val PROD_INTERSTITIAL = "ca-app-pub-5043960817552570/6441639432"
         private const val PROD_REWARDED = "ca-app-pub-5043960817552570/2949116988"
 
         // Google Test Ad Units

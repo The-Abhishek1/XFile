@@ -19,7 +19,7 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="${admobAppId}"/>
 
         <!-- Share/Open/Save (ResultScreen, FilesScreen) all need a content:// URI for the
              files PdfProcessor/ImageProcessor write to cacheDir — a raw file:// Uri passed
