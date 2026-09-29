@@ -19,9 +19,18 @@ class ThemeViewModel @Inject constructor(
     val themeState: StateFlow<AppTheme> = themeRepository.themeFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppTheme.SYSTEM)
 
+    val onboardingCompleted: StateFlow<Boolean> = themeRepository.onboardingCompletedFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setTheme(theme: AppTheme) {
         viewModelScope.launch {
             themeRepository.setTheme(theme)
+        }
+    }
+
+    fun setOnboardingCompleted(completed: Boolean) {
+        viewModelScope.launch {
+            themeRepository.setOnboardingCompleted(completed)
         }
     }
 }

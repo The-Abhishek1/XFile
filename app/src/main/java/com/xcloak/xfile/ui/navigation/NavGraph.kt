@@ -24,6 +24,7 @@ import com.xcloak.xfile.ui.screens.pdf.PdfToolsScreen
 import com.xcloak.xfile.ui.screens.images.ImageToolsScreen
 
 import com.xcloak.xfile.core.billing.BillingManager
+import com.xcloak.xfile.ui.theme.ThemeViewModel
 
 @Composable
 fun XFileNavGraph(
@@ -31,6 +32,9 @@ fun XFileNavGraph(
     billingManager: BillingManager,
     onUpgradeClick: (Activity) -> Unit
 ) {
+    val themeViewModel: ThemeViewModel = hiltViewModel()
+    val onboardingCompleted by themeViewModel.onboardingCompleted.collectAsState()
+
     NavHost(
         navController = navController,
         startDestination = Screen.Splash,
@@ -42,8 +46,14 @@ fun XFileNavGraph(
         composable<Screen.Splash> {
             SplashScreen(
                 onSplashComplete = {
-                    navController.navigate(Screen.Onboarding) {
-                        popUpTo(Screen.Splash) { inclusive = true }
+                    if (onboardingCompleted) {
+                        navController.navigate(Screen.Home) {
+                            popUpTo(Screen.Splash) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Onboarding) {
+                            popUpTo(Screen.Splash) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -52,6 +62,7 @@ fun XFileNavGraph(
         composable<Screen.Onboarding> {
             OnboardingScreen(
                 onGetStarted = {
+                    themeViewModel.setOnboardingCompleted(true)
                     navController.navigate(Screen.Home) {
                         popUpTo(Screen.Onboarding) { inclusive = true }
                     }
